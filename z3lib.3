@@ -1,0 +1,61 @@
+.\" Man page for z3lib
+.\"
+.\" Copyright GPL,BSD (C) 2006, Oskar Schirmer
+.\"
+.TH z3lib 3 "2013-05-14" "1.3" "de/compression library"
+.SH NAME
+z3lib \- compression/decompression library
+.SH SYNOPSIS
+.B #include <z3lib.h>
+.br
+.B #include <z3blib.h>
+.br
+.B #include <z3dlib.h>
+.br
+.B #include <z3flib.h>
+.SH DESCRIPTION
+\fBz3lib\fR is a substitute for the zlib compression library.
+It is made up of three layers, hence the name.
+The lowest layer, \fBz3blib\fR, compresses partial files, up
+to the boundary of a compressed block as defined in RFC1951,
+section 3.2; this layer is not designed for direct
+application usage.
+The second layer, \fBz3dlib\fR, allows compression of unlimited
+amounts of data in memory, according to RFC1951.
+The third layer, \fBz3flib\fR, provides means to read and write
+from and to compressed files, according to RFC1952.
+.SH INSTALLATION
+Change the current path to where You dropped
+the files in this package and
+.P
+.B make
+.P
+to compile the library.
+Then
+.P
+.B make install
+.P
+to deposit the library files and man page to the \fI/usr\fR hierarchy.
+.SH OPTIONS
+.TP
+.BR DECODE_ONLY=1 ,\  ENCODE_ONLY=1
+When invoking \fImake\fR with one of these parameters, only the
+desired part of the z3lib is compiled.
+.TP
+.B WITHOUT_LIBC=1
+When invoking \fImake\fR with this parameter, the following functions
+are assumed to be missing and thus locally declared:
+memcpy, memset, memcmp, strlen.
+This may be useful in an environment where no libc is available,
+e.g. for usage with a bootloader.
+.SH "SEE ALSO"
+.BR z3dlib (3),
+.BR z3flib (3),
+.BR http://rfc.net/rfc1951.html ,
+.BR http://rfc.net/rfc1952.html ,
+.BR zlib (3).
+.P
+For detailed information on the z3blib layer, please
+refer to the header file \fBz3blib.h\fR.
+.SH AUTHOR
+Oskar Schirmer (oskar@scara.com).

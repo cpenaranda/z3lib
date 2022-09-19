@@ -1,0 +1,204 @@
+.\" Man page for z3lib
+.\"
+.\" Copyright GPL,BSD (C) 2006, Oskar Schirmer
+.\"
+.TH z3dlib 3 "2013-05-14" "1.3" "de/compression library"
+.SH NAME
+z3lib \- compression/decompression library
+.SH SYNOPSIS
+.B #include <z3lib.h>
+.br
+.B #include <z3blib.h>
+.br
+.B #include <z3dlib.h>
+.P
+.B struct z3de_handle *z3d_encode_init(void
+.BI * memory ,
+.B unsigned int
+.IB memsize ,
+.B __u32
+.IB tellwhen ,
+.B __u8
+.IB thrmin ,
+.B __u8
+.IB thrmax ,
+.B __u32
+.IB initialgrant ,
+.B int
+.IB preferlonger ,
+.B int
+.IB limitlength3 );
+.P
+.B struct z3de_handle *z3d_encode(struct z3de_handle
+.BI * zh ,
+.B __u8
+.BI * data ,
+.B __u32
+.IB datasize ,
+.B __u32
+.BI * taken ,
+.B __u8
+.BI * code ,
+.B __u32
+.IB codesize ,
+.B __u32
+.BI * given );
+.P
+.B struct z3dd_handle *z3d_decode_init(__u32
+.IB pending_bits ,
+.B int
+.IB pending_nb ,
+.B void
+.BI * memory ,
+.B unsigned int
+.IB memsize );
+.P
+.B struct z3dd_handle *z3d_decode(struct z3dd_handle
+.BI * zh ,
+.B int
+.BI * error ,
+.B __u32
+.BI * pending_bits ,
+.B int
+.BI * pending_nb ,
+.B __u8
+.BI * code ,
+.B __u32
+.IB codesize ,
+.B __u32
+.BI * taken ,
+.B __u8
+.BI ** data ,
+.B __u32
+.BI * given );
+.P
+.B static inline struct z3dd_handle *z3d_decode_relative(struct z3dd_handle
+.BI * zh ,
+.B int
+.BI * error ,
+.B __u32
+.BI * pending_bits ,
+.B int
+.BI * pending_nb ,
+.B __u8
+.BI * code ,
+.B __u32
+.IB codesize ,
+.B __u32
+.BI * taken ,
+.B __u32
+.BI * index ,
+.B __u32
+.BI * given );
+.SH DESCRIPTION
+This is the second layer of \fBz3lib\fR,
+it provides functions to compress and decompress
+arbitrary amounts of data in main memory,
+according to RFC1951.
+.SH ENCODE
+To encode data, first call \fBz3d_encode_init\fR once
+to obtain a valid handle, giving it the following parameters:
+.TP
+.B memory
+Refers to a memory block of size \fImemsize\fR,
+reserved for the compressor, where \fImemsize\fR must not
+be less than \fIZ3DE_MEMSIZE_MIN\fR
+.TP
+.B tellwhen
+Frequency for code size estimation and block close
+decision. \fI0\fR for none (i.e. full block usage always),
+minimum value is \fIZ3DE_SLICE_MIN\fR, values larger
+than \fI(memsize-Z3DE_MEMSIZE_MIN)/2\fR are not useful
+.TP
+.BR thrmin ,\  thrmax
+Threshold for block close decision, in range
+\fI0..Z3DE_THRESHOLD_ONE\fR (on behalf of rational range \fI0..1\fR);
+a block will be closed when compression ratio is less than all previously
+determined ratios times \fBthrmin\fI/Z3DE_THRESHOLD_ONE\fR, or when
+it is greater than all previously
+determined ratios times \fIZ3DE_THRESHOLD_ONE/\fBthrmax\fR
+.TP
+.B initialgrant
+For threshold comparision, all but the first slice are
+asumed to be incremented by this value to roughly compensate
+RFC1951 block dynamic table size
+.TP
+.B preferlonger
+When non-zero, the compressor will try to find a longer
+match at fInfR+1 and prefer it over a previous match at fInfR
+.TP
+.B limitlength3
+When non-zero, then for codes with length 3 and large
+distance, check whether coding as literal is better
+.P
+Now call \fBz3d_encode\fR repeatedly, until it
+returns \fINULL\fR:
+.TP
+.BR data ,\  datasize
+A number of bytes that are available to compress
+\fBdatasize\fR must be greater than \fI0\fR unless end of data is reached
+.TP
+.BR code ,\  codesize
+Refers to a buffer for readily compressed code, and its maximum size
+.TP
+.B taken
+Returns the number of bytes actually
+taken from the \fBdata\fR buffer, in range \fI0..datasize\fR
+.TP
+.B given
+Returns the number of bytes stored into the \fBcode\fR buffer,
+in range \fI0..\fBcodesize\fR
+.P
+Note, that all output parameters are still valid when
+the function returns \fINULL\fR. In particular, on the
+last call of the function it may return pending code,
+which is indicated by a non-zero value for \fBgiven\fR.
+.SH DECODE
+To decode data, first call \fBz3d_decode_init\fR once
+to obtain a valid handle, giving it the following parameters:
+.TP
+.BR pending_bits ,\  pending_nb
+For data which does not start on a byte boundary,
+the initial bits are given here.
+Otherwise, both parameters must be \fI0\fR
+.TP
+.BR memory ,\  memsize
+memory reserved for the decompressor, memsize shall
+be and must not be less than \fIZ3DD_MEMSIZE\fR
+.P
+Now call \fBz3d_decode\fR repeatedly, until it returns \fINULL\fR:
+.TP
+.BR code ,\  codesize
+a number of bytes that are available to decompress
+.TP
+.B error
+Finally returns an error code, see \fBz3lib.h\fR
+.TP
+.BR pending_bits ,\  pending_nb
+Finally returns a number of bits pending
+.TP
+.B taken
+Returns the number of bytes actually taken from
+\fBcode\fR, in range \fI0..\fBcodesize\fR.
+.TP
+.B data
+Returns a pointer to a number of bytes readily decompressed
+.TP
+.B given
+Returns the number of bytes available at the \fBdata\fR pointer
+.P
+Note, that the last three output parameters are valid
+only as long as the function does not return \fINULL\fR.
+.P
+For use with garbage collectable systems, one may want to use the
+function \fBz3d_decode_relative\fR which returns a relative
+\fBindex\fR instead of the absolute \fBdata\fR pointer:
+.TP
+.B index
+Returns an index into \fI(char *)zh\fR, where to find the output bytes
+.SH "SEE ALSO"
+.BR z3lib (3),
+.BR z3flib (3),
+.BR http://rfc.net/rfc1951.html .
+.SH AUTHOR
+Oskar Schirmer (oskar@scara.com).

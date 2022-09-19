@@ -1,0 +1,134 @@
+.\" Man page for z3lib
+.\"
+.\" Copyright GPL,BSD (C) 2006, Oskar Schirmer
+.\"
+.TH z3flib 3 "2013-05-14" "1.3" "de/compression library"
+.SH NAME
+z3lib \- compression/decompression library
+.SH SYNOPSIS
+.B #include <time.h>
+.br
+.B #include <z3lib.h>
+.br
+.B #include <z3blib.h>
+.br
+.B #include <z3dlib.h>
+.br
+.B #include <z3flib.h>
+.P
+.B int z3f_encode_init(int
+.IB filedescr ,
+.B struct z3fe_handle
+.BI * zh ,
+.B int
+.IB level ,
+.B time_t
+.IB mtime ,
+.B int
+.IB os ,
+.B int
+.IB xlen ,
+.B __u8
+.BI * fextra ,
+.B char
+.BI * fname ,
+.B char
+.BI * fcomment );
+.P
+.B int z3f_encode_header(struct z3fe_handle
+.BI * zh ,
+.B int
+.IB xlen ,
+.B __u8
+.BI * fextra ,
+.B char
+.BI * fname ,
+.B char
+.BI * fcomment );
+.P
+.B int z3f_encode_write(struct z3fe_handle
+.BI * zh ,
+.B __u8
+.BI * data ,
+.B __u32
+.IB count );
+.P
+.B int z3f_decode_init(int
+.IB filedescr ,
+.B struct z3fd_handle
+.BI * zh );
+.P
+.B int z3f_decode_read(struct z3fd_handle
+.BI * zh ,
+.B __u8
+.BI * data ,
+.B __u32
+.IB count );
+.SH DESCRIPTION
+This is the third layer of \fBz3lib\fR,
+it provides means to read and write
+from and to compressed files, according to RFC1952.
+.SH ENCODE
+To encode data while writing it to a compressed file,
+open the file for writing first.
+Then, call \fBz3f_encode_init\fR once to initialise the
+compression structure \fIzh\fR.
+Next, call \fBz3f_encode_header\fR repeatedly, until it
+returns \fI0\fR. This function may return \fI-EAGAIN\fR,
+which is no error. Here the parameters must not vary from
+one call to the next, and must be given the same values
+as with \fBz3f_encode_init\fR:
+.TP
+.B level
+The desired compression level, in range \fI1..9\fR,
+or \fI0\fR for default
+.TP
+.B mtime
+The time stamp, in seconds since 1970/01/01 00:00:00
+.TP
+.B os
+The operating system indicator byte, \fI-1\fR when unknown
+.TP
+.B fextra
+An array of \fBxlen\fR bytes to be included in header, or \fINULL\fR
+.TP
+.B fname
+A zero terminated name string, or \fINULL\fR
+.TP
+.B fcomment
+A zero terminated comment string, or \fINULL\fR
+.P
+Now call \fBz3f_encode_write\fR repeatedly, until it
+returns \fI0\fR. This function may return \fI-EAGAIN\fR,
+which is no error. When returning a positive value,
+it indicates the number of bytes actually transferred
+from the buffer \fIdata\fR (of size \fIcount\fR)
+into the compressed file.
+Note, that \fIcount\fR must not be zero, unless no
+more data is available. In the latter case, \fIcount\fR
+must be zero and the function must be called again,
+until it returns \fI0\fR, too.
+Finally close the file.
+.SH DECODE
+To decode data while reading it from a compressed file,
+open the file for reading first.
+Then, call \fBz3f_decode_init\fR once to initialise the
+decompression structure \fIzh\fR.
+Next, call \fBz3f_decode_read\fR repeatedly, until it
+returns \fI0\fR. This function may return \fI-EAGAIN\fR,
+which is no error. When returning a positive value,
+it indicates the number of bytes actually transferred
+into the buffer \fIdata\fR (of size \fIcount\fR).
+Finally close the file.
+.SH "SEE ALSO"
+.BR z3lib (3),
+.BR z3dlib (3),
+.BR http://rfc.net/rfc1952.html ,
+.BR open (2),
+.BR fileno (3),
+.BR read (2),
+.BR write (2),
+.BR close (2),
+.BR /usr/include/asm/errno.h .
+.SH AUTHOR
+Oskar Schirmer (oskar@scara.com).
